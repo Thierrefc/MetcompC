@@ -1,0 +1,59 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import imageio
+
+dt = 0.01
+dx = 0.1
+L = 10
+T = 50
+
+#constantes do plasma
+nu_a = 0.1
+Da = 0.5
+
+#constantes para a eq da onda
+c = np.sqrt(nu_a*Da)
+h = nu_a/2
+s = (c*dt/dx)**2
+
+x = np.linspace(0, L, int(L/dx)) #array com as coordenadas espaciais
+t = np.linspace(0, T, int(T/dt)) #array com as coordenadas temporais
+n = np.zeros((len(t), len(x)))   #matriz com a densidade n(x,t)
+
+#fazemos o plasma inicialmente concentrado em uma regiao
+for i in range(int(len(x)/4),int(3*len(x)/4)):
+    n[0,i] = 1
+plt.plot(x,n[0]) #plota estado inicial da funcao
+plt.title(r'$\nu_a=$'+str(nu_a)+'   $D_a=$'+str(Da))
+plt.xlabel('L')
+plt.ylabel('n(x)')
+plt.ylim([0,1.1])
+plt.xlim([0,L])
+plt.text(8,0.9,'T = 0.0')
+plt.savefig('n_0.png')
+plt.clf()
+
+#calculamos o próximo passo considerando dn/dt = 0 inicialmente    
+for i in range(1,len(x)-1):
+    n[1,i] = 0.5*(2*(1-s)*n[0,i] + s*(n[0,i+1] + n[0,i-1]))
+
+#calculamos a posterior evolucao
+for k in range(1, len(t)-1):
+    for i in range(1,len(x)-1): #isso fixa os contornos em 0
+        n[k+1,i] = (1/(1+h*dt))*(2*(1-s)*n[k,i] - (1-h*dt)*n[k-1,i] + s*(n[k,i+1] + n[k,i-1]))
+    if k*dt - int(k*dt) == 0: #plota figuras para valores inteiros de t
+       plt.plot(x,n[k])
+       plt.title(r'$\nu_a=$'+str(nu_a)+'   $D_a=$'+str(Da))
+       plt.xlabel('L')
+       plt.ylabel('n(x)')
+       plt.xlim([0,L])
+       plt.ylim([0,1.1])
+       plt.text(8,0.9,'T = '+str(k*dt))
+       plt.savefig('n_'+str(int(k*dt))+'.png')
+       plt.clf()
+    
+#criamos gifs usando os plots
+images = []
+for k in range(T):
+    images.append(imageio.imread('n_'+str(k)+'.png'))
+imageio.mimsave('difusao_ambipolar_'+str(nu_a)+'_'+str(Da)+'.gif', images, format='GIF', duration=1./10)
